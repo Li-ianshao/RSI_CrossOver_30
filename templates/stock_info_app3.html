@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>美股跌深漲多股票觀察站</title>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <style>
+        /* 基本表格樣式 */
+        table {
+            font-family: Arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th, td {
+            border: 1px solid #d1d1d1;
+            padding: 10px;
+            text-align: center;
+        }
+
+        /* 表頭樣式 */
+        th {
+            background-color: #f2f2f2;
+            color: #333;
+            font-weight: bold;
+        }
+
+        /* 奇數行樣式 */
+        tr:nth-child(odd) {
+            background-color: #f7f7f7;
+        }
+
+        /* 圓角 */
+        table {
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        /* 陰影效果 */
+        table {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 鼠標悬浮效果 */
+        tr:hover {
+            background-color: #e0e0e0;
+        }
+
+        /* 連結風格 */
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .good {
+            background-color:#A9DFBF;
+            color:black;
+        }
+
+        .better {
+            background-color:#229954;
+            color:white;
+        }
+
+        .best {
+            background-color:#0B5345;
+            color:white;
+        }
+
+        .bad {
+            background-color:pink;
+            color:black;
+        }
+
+        .worse {
+            background-color:salmon;
+            color:white;
+        }
+
+        .worst {
+            background-color:red;
+            color:white;
+        }
+
+        .alert {
+            background-color:yellow;
+            color:black;
+        }
+
+        .notice {
+            background-color:lightyellow;
+            color:black;
+        }
+
+        
+    </style>
+</head>
+<body>
+    <div>
+        <div>
+            <h2 id='updatedTime'></h2>
+            <h2>總股票數量：{{ no_of_stocks }} 檔</h2>
+            <div>
+                <label for="ticker">請輸入個股查詢：</label>
+                <input type="text" id="ticker" name="ticker" required minlength="1" maxlength="8" size="10" value="VTRS"/>
+                <input class="styled" type="button" value="Click" onclick='window.location.href = "?ticker=" + document.getElementById("ticker").value'/>
+            </div>
+        </div>
+        <hr/>
+    <h1>Watch List 即時股價監視</h1>
+    <h2>成員股與買進目標價：{{ text }}</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>股票代號</th>
+                    <th>分類</th>
+                    <th style='width:100px'>產業</th>
+                    <th>目前價格</th>
+                    <th>目前漲跌幅</th>
+                    <th>3M最大跌幅</th>
+                    <th>基本面</th>
+                    <th>交易量</th>
+                    <th>股息與殖利率</th>
+                    <th>技術指標</th>
+                </tr>
+            </thead>
+            <tbody id='contents-0'>
+            {% for s in data4 %}
+                <tr>
+                    <td>
+                        <span class="stock-symbol">
+                            {% set url = "https://finance.yahoo.com/quote/" + s['Ticker'] %}
+                            <a href="{{ url }}" target="_blank">{{ s['Ticker'] }}</a>
+                        </span>
+                    </td>
+                    <td>{{ s['Category'] }}</td>
+                    <td style='width:100px'>{{ s['Industry'] }}</td>
+                    <td>${{ s['Price'] }}</td> 
+
+                    {% if s['Change'] >= 10.0 or s['Change'] <= -10.0 %}
+                        <td class='alert'>
+                    {% elif s['Change'] >= 5.0 or s['Change'] <= -5.0 %}
+                        <td class='notice'>
+                    {% else %}
+                        <td>
+                    {% endif %}
+                            {{ s['Change'] }}%
+                        </td>
+
+                    {% if s['Decreased'] >= 50.0 %}
+                        <td class='better'>
+                    {% elif s['Decreased'] >= 40.0 %}
+                        <td class='good'>
+                    {% else %}
+                        <td>
+                    {% endif %}
+                            {{ s['Decreased'] }}%
+                        </td>
+                    
+                    {% if s['PE'] >= 100.0 %}
+                        <td class='worse'>PE:{{ s['PE'] }}<br/>EPS:{{ s['EPS'] }}</td>
+                    {% elif s['PE'] >= 80.0 %}
+                        <td class='bad'>PE:{{ s['PE'] }}<br/>EPS:{{ s['EPS'] }}</td>
+                    {% elif s['PE'] <= 0.0 %}
+                        <td>PE:N.A.<br/>EPS:{{ s['EPS'] }}</td>
+                    {% elif s['PE'] <= 10.0 %}
+                        <td class='better'>PE:{{ s['PE'] }}<br/>EPS:{{ s['EPS'] }}</td>
+                    {% elif s['PE'] <= 20.0 %}
+                        <td class='good'>PE:{{ s['PE'] }}<br/>EPS:{{ s['EPS'] }}</td>
+                    {% else %}
+                        <td>PE:{{ s['PE'] }}<br/>EPS:{{ s['EPS'] }}</td>
+                    {% endif %}
+
+                    {% if s['Volume'] > (s['AVG_Vol'] * 1.5) %} 
+                        <td class='alert'>
+                    {% elif s['Volume'] > s['AVG_Vol'] %}
+                        <td class='notice'>
+                    {% else %}
+                        <td>
+                    {% endif %}
+                            今日：{{ "{:,}".format(s['Volume']) }}<br/>
+                            平均：{{ "{:,}".format(s['AVG_Vol']) }}<br/>
+                        </td>
+
+                    {% if s['Yield'] >= 6.0 %}
+                        <td class='better'>
+                            殖利率：{{ s['Yield'] }}%<br/>
+                            股息：${{ s['Dividend'] }}<br/>
+                            日期：{{ s['Div_Date'] }}
+                        </td>
+                    {% elif s['Yield'] >= 3.0 %}
+                        <td class='good'>
+                            殖利率：{{ s['Yield'] }}%<br/>
+                            股息：${{ s['Dividend'] }}<br/>
+                            日期：{{ s['Div_Date'] }}
+                        </td>
+                    {%elif s['Dividend'] > 0.0 %}
+                        <td>
+                            殖利率：{{ s['Yield'] }}%<br/>
+                            股息：${{ s['Dividend'] }}<br/>
+                            日期：{{ s['Div_Date'] }}
+                        </td>
+                    {% else %}
+                        <td></td>
+                    {% endif %}
+
+                    {% if s['RSI'] <= 30 %}
+                        <td class='better'>
+                    {% elif s['RSI'] >= 70.0 %}
+                        <td class='worse'>
+                    {% elif s['RSI'] <= 35.0 %}
+                        <td class='good'>
+                    {% elif s['RSI'] >= 65.0 %}
+                        <td class='bad'>
+                    {% else %}
+                        <td>
+                    {% endif %}
+                            RSI：{{ s['RSI'] }}<br/>
+                            BB：{{ s['BBAND'] }}<br/>
+                            MACD：{{ s['MACD'] }}
+                        </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+    <h1>跌深股票列表</h1>
+    <h2><span id='ratio'>跌幅門檻：{{ threshold }}%。</span><span id='total'>跌深股票總數：{{ no_dec_stocks }} 檔</span></h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>股票代號</th>
+                    <th>分類</th>
+                    <th style='width:100px'>產業</th>
+                    <th>目前價格</th>
+                    <th>目前漲跌幅</th>
+                    <th>3M最大跌幅</th>
+                    <th>基本面</th>
+                    <th>交易量</th>
+                    <th>股息與殖利率</th>
+                    <th>技術指標</th>
+                </tr>
+            </thead>
+            <tbody id='contents-0'>
+            {% for s in data %}
+                <tr>
+                    <td>
+                        <span class="stock-symbol">
+                            {% set url = "https://finance.yahoo.com/quote/" + s['Ticker'] %}
+                            <a href="{{ url }}" target="_blank">{{ s['Ticker'] }}</a>
+                        </span>
+                    </td>
+                    <td>{{ s['Category'] }}</td>
+                    <td style='width:100px'>{{ s['Industry'] }}</td>
+                    <td>${{ s['Price'] }}</td> 
+
+                    {% if s['Change'] >= 10.0 or s['Change'] <= -10.0 %}
+                        <td class='alert'>
+                    {% elif s['Change'] >= 5.0 or s['Change'] <= -5.0 %}
+                        <td class='notice'>
+                    {% else %}
+                        <td>
+                    {% endif %}
+                            {{ s['Change'] }}%
+                        </td>
+
+                    {% if s['Decreased'] >= 50.0 %}
+                        <td class='better'>
+                    {% elif s['Decreased'] >= 40.0 %}
+                        <td class='good'>
+                    {% else %}
+                        <td>
+                    {% endif %}
+                            {{ s['Decreased'] }}%
+                        </td>
+
+                    
+                    {% if s['PE'] >= 100.0 %}
+                        <td class='worse'>PE:{{ s['PE'] }}<br/>EPS:{{ s['EPS'] }}</td>
+                    {% elif s['PE'] >= 80.0 %}
+                        <td class='bad'>PE:{{ s['PE'] }}<br/>EPS:{{ s['EPS'] }}</td>
+                    {% elif s['PE'] <= 0.0 %}
+                        <td>PE:N.A.<br/>EPS:{{ s['EPS'] }}</td>
+                    {% elif s['PE'] <= 10.0 %}
+                        <td class='better'>PE:{{ s['PE'] }}<br/>EPS:{{ s['EPS'] }}</td>
+                    {% elif s['PE'] <= 20.0 %}
+                        <td class='good'>PE:{{ s['PE'] }}<br/>EPS:{{ s['EPS'] }}</td>
+                    {% else %}
+                        <td>PE:{{ s['PE'] }}<br/>EPS:{{ s['EPS'] }}</td>
+                    {% endif %}
+
+                    {% if s['Volume'] > (s['AVG_Vol'] * 1.5) %} 
+                        <td class='alert'>
+                    {% elif s['Volume'] > s['AVG_Vol'] %}
+                        <td class='notice'>
+                    {% else %}
+                        <td>
+                    {% endif %}
+                            今日：{{ "{:,}".format(s['Volume']) }}<br/>
+                            平均：{{ "{:,}".format(s['AVG_Vol']) }}<br/>
+                        </td>
+
+                    {% if s['Yield'] >= 6.0 %}
+                        <td class='better'>
+                            殖利率：{{ s['Yield'] }}%<br/>
+                            股息：${{ s['Dividend'] }}<br/>
+                            日期：{{ s['Div_Date'] }}
+                        </td>
+                    {% elif s['Yield'] >= 3.0 %}
+                        <td class='good'>
+                            殖利率：{{ s['Yield'] }}%<br/>
+                            股息：${{ s['Dividend'] }}<br/>
+                            日期：{{ s['Div_Date'] }}
+                        </td>
+                    {%elif s['Dividend'] > 0.0 %}
+                        <td>
+                            殖利率：{{ s['Yield'] }}%<br/>
+                            股息：${{ s['Dividend'] }}<br/>
+                            日期：{{ s['Div_Date'] }}
+                        </td>
+                    {% else %}
+                        <td></td>
+                    {% endif %}
+
+                    {% if s['RSI'] <= 30 %}
+                        <td class='better'>
+                    {% elif s['RSI'] >= 70.0 %}
+                        <td class='worse'>
+                    {% elif s['RSI'] <= 35.0 %}
+                        <td class='good'>
+                    {% elif s['RSI'] >= 65.0 %}
+                        <td class='bad'>
+                    {% else %}
+                        <td>
+                    {% endif %}
+                            RSI：{{ s['RSI'] }}<br/>
+                            BB：{{ s['BBAND'] }}<br/>
+                            MACD：{{ s['MACD'] }}
+                        </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <hr/>
+
+    <h1>單日跌深股票列表</h1>
+    <h2><span id='ratio'>跌幅門檻：{{ threshold_day }}%。</span><span id='total'>單日跌深股票總數：{{ no_dayDec_stocks }} 檔</span></h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>股票代號</th>
+                    <th>分類</th>
+                    <th style='width:100px'>產業</th>
+                    <th>目前價格</th>
+                    <th>目前漲跌幅</th>
+                    <th>3M最大跌幅</th>
+                    <th>基本面</th>
+                    <th>交易量</th>
+                    <th>股息與殖利率</th>
+                    <th>技術指標</th>
+                </tr>
+            </thead>
+            <tbody id='contents-0'>
+            {% for s in data3 %}
+                <tr>
+                    <td>
+                        <span class="stock-symbol">
+                            {% set url = "https://finance.yahoo.com/quote/" + s['Ticker'] %}
+                            <a href="{{ url }}" target="_blank">{{ s['Ticker'] }}</a>
+                        </span>
+                    </td>
+                    <td>{{ s['Category'] }}</td>
+                    <td style='width:100px'>{{ s['Industry'] }}</td>
+                    <td>${{ s['Price'] }}</td> 
+
+                    {% if s['Change'] >= 10.0 or s['Change'] <= -10.0 %}
+                        <td class='alert'>
+                    {% elif s['Change'] >= 5.0 or s['Change'] <= -5.0 %}
+                        <td class='notice'>
+                    {% else %}
+                        <td>
+                    {% endif %}
+                            {{ s['Change'] }}%
+                        </td>
+
+                    {% if s['Decreased'] >= 50.0 %}
+                        <td class='better'>
+                    {% elif s['Decreased'] >= 40.0 %}
+                        <td class='good'>
+                    {% else %}
+                        <td>
+                    {% endif %}
+                            {{ s['Decreased'] }}%
+                        </td>
+                    
+                    {% if s['PE'] >= 100.0 %}
+                        <td class='worse'>PE:{{ s['PE'] }}<br/>EPS:{{ s['EPS'] }}</td>
+                    {% elif s['PE'] >= 80.0 %}
+                        <td class='bad'>PE:{{ s['PE'] }}<br/>EPS:{{ s['EPS'] }}</td>
+                    {% elif s['PE'] <= 0.0 %}
+                        <td>PE:N.A.<br/>EPS:{{ s['EPS'] }}</td>
+                    {% elif s['PE'] <= 10.0 %}
+                        <td class='better'>PE:{{ s['PE'] }}<br/>EPS:{{ s['EPS'] }}</td>
+                    {% elif s['PE'] <= 20.0 %}
+                        <td class='good'>PE:{{ s['PE'] }}<br/>EPS:{{ s['EPS'] }}</td>
+                    {% else %}
+                        <td>PE:{{ s['PE'] }}<br/>EPS:{{ s['EPS'] }}</td>
+                    {% endif %}
+
+                    {% if s['Volume'] > (s['AVG_Vol'] * 1.5) %} 
+                        <td class='alert'>
+                    {% elif s['Volume'] > s['AVG_Vol'] %}
+                        <td class='notice'>
+                    {% else %}
+                        <td>
+                    {% endif %}
+                            今日：{{ "{:,}".format(s['Volume']) }}<br/>
+                            平均：{{ "{:,}".format(s['AVG_Vol']) }}<br/>
+                        </td>
+
+                    {% if s['Yield'] >= 6.0 %}
+                        <td class='better'>
+                            殖利率：{{ s['Yield'] }}%<br/>
+                            股息：${{ s['Dividend'] }}<br/>
+                            日期：{{ s['Div_Date'] }}
+                        </td>
+                    {% elif s['Yield'] >= 3.0 %}
+                        <td class='good'>
+                            殖利率：{{ s['Yield'] }}%<br/>
+                            股息：${{ s['Dividend'] }}<br/>
+                            日期：{{ s['Div_Date'] }}
+                        </td>
+                    {%elif s['Dividend'] > 0.0 %}
+                        <td>
+                            殖利率：{{ s['Yield'] }}%<br/>
+                            股息：${{ s['Dividend'] }}<br/>
+                            日期：{{ s['Div_Date'] }}
+                        </td>
+                    {% else %}
+                        <td></td>
+                    {% endif %}
+
+                    {% if s['RSI'] <= 30 %}
+                        <td class='better'>
+                    {% elif s['RSI'] >= 70.0 %}
+                        <td class='worse'>
+                    {% elif s['RSI'] <= 35.0 %}
+                        <td class='good'>
+                    {% elif s['RSI'] >= 65.0 %}
+                        <td class='bad'>
+                    {% else %}
+                        <td>
+                    {% endif %}
+                            RSI：{{ s['RSI'] }}<br/>
+                            BB：{{ s['BBAND'] }}<br/>
+                            MACD：{{ s['MACD'] }}
+                        </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <hr/>
+
+    <h1>RSI低於 30 的股票列表</h1>
+    <h2><span id='total'>股票總數：{{ no_inc_stocks }} 檔</span></h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>股票代號</th>
+                    <th>分類</th>
+                    <th style='width:100px'>產業</th>
+                    <th>目前價格</th>
+                    <th>目前漲跌幅</th>
+                    <th>3M最大漲幅</th>
+                    <th>基本面</th>
+                    <th>交易量</th>
+                    <th>股息與殖利率</th>
+                    <th>技術指標</th>
+                </tr>
+            </thead>
+            <tbody id='contents-0'>
+            {% for s in data2 %}
+                <tr>
+                    <td>
+                        <span class="stock-symbol">
+                            {% set url = "https://finance.yahoo.com/quote/" + s['Ticker'] %}
+                            <a href="{{ url }}" target="_blank">{{ s['Ticker'] }}</a>
+                        </span>
+                    </td>
+                    <td>{{ s['Category'] }}</td>
+                    <td style='width:100px'>{{ s['Industry'] }}</td>
+                    <td>${{ s['Price'] }}</td> 
+                    
+                    {% if s['Change'] >= 10.0 or s['Change'] <= -10.0 %}
+                        <td class='alert'>
+                    {% elif s['Change'] >= 5.0 or s['Change'] <= -5.0 %}
+                        <td class='notice'>
+                    {% else %}
+                        <td>
+                    {% endif %}
+                            {{ s['Change'] }}%
+                        </td>
+
+                    {% if s['Increased'] >= 50.0 %}
+                        <td class='worse'>
+                    {% elif s['Increased'] >= 40.0 %}
+                        <td class='bad'>
+                    {% else %}
+                        <td>
+                    {% endif %}
+                            {{ s['Increased'] }}%
+                        </td>       
+
+                    
+                    {% if s['PE'] >= 100.0 %}
+                        <td class='worse'>PE:{{ s['PE'] }}<br/>EPS:{{ s['EPS'] }}</td>
+                    {% elif s['PE'] >= 80.0 %}
+                        <td class='bad'>PE:{{ s['PE'] }}<br/>EPS:{{ s['EPS'] }}</td>
+                    {% elif s['PE'] <= 0.0 %}
+                        <td>PE:N.A.<br/>EPS:{{ s['EPS'] }}</td>
+                    {% elif s['PE'] <= 10.0 %}
+                        <td class='better'>PE:{{ s['PE'] }}<br/>EPS:{{ s['EPS'] }}</td>
+                    {% elif s['PE'] <= 20.0 %}
+                        <td class='good'>PE:{{ s['PE'] }}<br/>EPS:{{ s['EPS'] }}</td>
+                    {% else %}
+                        <td>PE:{{ s['PE'] }}<br/>EPS:{{ s['EPS'] }}</td>
+                    {% endif %}
+
+                    {% set Volume = s['Volume'] | int %}
+
+                    {% set AVG_Vol = s['AVG_Vol'] | int %}
+                    {% if Volume > (AVG_Vol * 1.5) %} 
+                        <td class='alert'>
+                            今日：{{ "{:,}".format(Volume) }}<br/>
+                            平均：{{ "{:,}".format(AVG_Vol) }}<br/>
+                        </td>
+                    {% elif Volume > AVG_Vol %}
+                        <td class='notice'>
+                            今日：{{ "{:,}".format(Volume) }}<br/>
+                            平均：{{ "{:,}".format(AVG_Vol) }}<br/>
+                        </td>
+                    {% else %}
+                        <td>
+                            今日：{{ "{:,}".format(Volume) }}<br/>
+                            平均：{{ "{:,}".format(AVG_Vol) }}<br/>
+                        </td>
+                    {% endif %}
+                    
+
+                    {% if s['Yield'] >= 6.0 %}
+                        <td class='better'>
+                            殖利率：{{ s['Yield'] }}%<br/>
+                            股息：${{ s['Dividend'] }}<br/>
+                            日期：{{ s['Div_Date'] }}
+                        </td>
+                    {% elif s['Yield'] >= 3.0 %}
+                        <td class='good'>
+                            殖利率：{{ s['Yield'] }}%<br/>
+                            股息：${{ s['Dividend'] }}<br/>
+                            日期：{{ s['Div_Date'] }}
+                        </td>
+                    {%elif s['Dividend'] > 0.0 %}
+                        <td>
+                            殖利率：{{ s['Yield'] }}%<br/>
+                            股息：${{ s['Dividend'] }}<br/>
+                            日期：{{ s['Div_Date'] }}
+                        </td>
+                    {% else %}
+                        <td></td>
+                    {% endif %}
+                    
+                    {% if s['RSI'] <= 30 %}
+                        <td class='better'>
+                    {% elif s['RSI'] >= 70.0 %}
+                        <td class='worse'>
+                    {% elif s['RSI'] <= 35.0 %}
+                        <td class='good'>
+                    {% elif s['RSI'] >= 65.0 %}
+                        <td class='bad'>
+                    {% else %}
+                        <td>
+                    {% endif %}
+                            RSI：{{ s['RSI'] }}<br/>
+                            BB：{{ s['BBAND'] }}<br/>
+                            MACD：{{ s['MACD'] }}
+                        </td>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div>
+        <ul>
+            <li>警示顏色效果</li>
+            <li>殖利率 > 3, > 5 Green</li>
+            <li>PE < 10, > 100</li>
+            <li>EPS < 0.0</li>
+            <li>Abs(Surprise) > 10 </li>
+            <li>交易量大於平均值</li>
+            <li>寄送 emails</li>
+            <li>程式精簡，尤其是 html 部分兩個表格可以合併</li>
+        </ul>
+    </div>
+    <div>
+        <h3>資料說明</h3>
+        <ul>
+            <li>4Q盈餘(估計/實際/訝異值)是該公司最近四季的 Earnings 的估計值，實際值，訝異值的列表。各值是以時間倒序排列，所以各列的第一個數字是最近一季的資料。</li>
+            <li>增加最大漲幅列表</li>
+        </ul>
+    </div>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        document.getElementById("updatedTime").innerHTML = '上次更新時間：' + new Date();   
+    });
+
+    function updateStockInfo() {
+        // 檢查如果是星期六或星期日，停止執行
+        // 如果超過下午三點十分，停止執行
+        const d = new Date();
+        let weekDay = d.getDay();
+        let hour = d.getHours();
+        let min = d.getMinutes();
+        
+        if (weekDay == 6 || weekDay ==0 || hour < 8 || hour > 15) {
+            // do nothing
+        } 
+        else {
+            location.reload();
+        }
+    }
+
+    // 每隔5分鐘執行一次更新
+    setInterval(updateStockInfo,  5 * 60 * 1000);
+</script>
+</html>

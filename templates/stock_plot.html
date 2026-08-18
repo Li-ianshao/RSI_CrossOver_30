@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>股票詳細資訊</title>
+    <style>
+        line {
+            color:red;
+        }
+    </style>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script type="text/javascript">
+        document.addEventListener("DOMContentLoaded", function () {
+            fn = "{{ fn }}"
+            symbol = "{{ symbol }}"
+            var margin = {top: 10, right: 30, bottom: 30, left: 60},
+                width = 460 - margin.left - margin.right,
+                height = 400 - margin.top - margin.bottom;
+
+            // append the svg object to the body of the page
+            var svg = d3.select("#my_dataviz")
+              .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+              .append("g")
+                .attr("transform",
+                      "translate(" + margin.left + "," + margin.top + ")");
+
+            // here comes data 
+            d3.csv('/static/data.csv')
+                .then(function(data) {
+                    // convert Close to float type
+                    //data.Close = parseFloat(data.Close)
+                    //console.log(data[1].Close)
+
+                    var x = d3.scaleTime()
+                  .domain(d3.extent(data, function(d) { return d.Date; }))
+                  .range([ 0, width ]);
+                svg.append("g")
+                  .attr("transform", "translate(0," + height + ")")
+                  .call(d3.axisBottom(x));
+                
+                // Add Y axis
+                var y = d3.scaleLinear()
+                  .domain( [8000, 9200])
+                  .range([ height, 0 ]);
+                svg.append("g")
+                  .call(d3.axisLeft(y));
+
+                console.log('b4 path')
+                
+                // Add the line
+                svg.append("path")
+                  .datum(data)
+                  .attr("fill", "none")
+                  .attr("stroke", "#69b3a2")
+                  .attr("stroke-width", 1.5)
+                  .attr("d", d3.line()
+                    .x(function(d) { return x(d.Date) })
+                    .y(function(d) { return y(d.Close) })
+                    )
+
+                console.log('b4svg')
+                // Add the points
+                svg
+                  .append("g")
+                  .selectAll("dot")
+                  .data(data)
+                  .enter()
+                  .append("circle")
+                    .attr("cx", function(d) { return x(d.Date) } )
+                    .attr("cy", function(d) { return y(parseFloat(d.Close)) } )
+                    .attr("r", 5)
+                    .attr("fill", "#69b3a2")
+                })
+                .catch(function(err) { 
+                    console.log(err); 
+                });
+
+
+            d3.csv("/static/data.csv", function(data) { // 這邊有問題，first augument should be an array, here however, is a single row
+                // Add X axis --> it is a date format
+                // first check if it is an array
+                //console.log(data)
+                var x = d3.scaleTime()
+                  .domain(d3.extent(data, function(d) { return d.Date; }))
+                  .range([ 0, width ]);
+                svg.append("g")
+                  .attr("transform", "translate(0," + height + ")")
+                  .call(d3.axisBottom(x));
+                // Add Y axis
+                var y = d3.scaleLinear()
+                  .domain( [8000, 9200])
+                  .range([ height, 0 ]);
+                svg.append("g")
+                  .call(d3.axisLeft(y));
+                // Add the line
+                svg.append("path")
+                  .datum(data)
+                  .attr("fill", "none")
+                  .attr("stroke", "#69b3a2")
+                  .attr("stroke-width", 1.5)
+                  .attr("d", d3.line()
+                    .x(function(d) { return x(d.Date) })
+                    .y(function(d) { return y(parseFloat(d.Close)) })
+                    )
+                // Add the points
+                svg
+                  .append("g")
+                  .selectAll("dot")
+                  .data(data)
+                  .enter()
+                  .append("circle")
+                    .attr("cx", function(d) { return x(d.Date) } )
+                    .attr("cy", function(d) { return y(parseFloat(d.Close)) } )
+                    .attr("r", 5)
+                    .attr("fill", "#69b3a2")
+            })
+    });
+    </script>
+</head>
+<body>
+    <h1>股票詳細資訊</h1>
+
+    <div>
+        <div>{{ symbol }}</div>
+        <div>{{ fn }}</div>
+    </div>
+    <div id="my_dataviz"></div>
+
+    <a href="/">返回</a>
+</body>
+</html>
+
+<!--
+   stock_details = {'symbol':s, 'PE Ratio (TTM)':PERatio, 'EPS':quote['EPS (TTM)'], 'Volumes':Volume + '/' + avg_Volume, 'Dividend & Yield':div_yield}
+
+-->

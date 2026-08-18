@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>股票詳細資訊</title>
+</head>
+<body>
+    <h1>股票詳細資訊</h1>
+
+    <div>
+        <div>
+            <span>股票代號</span>
+            <span>{{ stock_details.symbol }}</span>
+        </div>
+        <div>
+            <span>PE Ratio (TTM)</span>
+            <span>{{ stock_details.PERatio }}</span>
+        </div>
+        <div>
+            <span>EPS</span>
+            <span>{{ stock_details.EPS }}</span>
+        </div>
+        <div>
+            <span>Volume/Avg. Volume</span>
+            <span>{{ stock_details.Volumes }}</span>
+        </div>
+        <div>
+            <span>Dividend & Yield</span>
+            <span>{{ stock_details.div_yield }}</span>
+        </div>
+        <!-- 其他股票詳細資訊列 -->
+    </div>
+
+    <a href="/">返回</a>
+</body>
+</html>
