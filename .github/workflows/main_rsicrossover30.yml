@@ -51,6 +51,8 @@ jobs:
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
         with:
-          app-name: '你的App名稱' # 例如 rsicrossover30
+          app-name: 'RSICrossOver30' # 例如 rsicrossover30
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_XXXXX }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_5474FC9186E749DD95B6ED055DD4E9E8 }}
+
+
